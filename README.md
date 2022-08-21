@@ -4,7 +4,7 @@ Script to download and start the JViewer remote console application. It has beco
 
 Furthermore, the JViewer version in the latest BMC firmware (as of 2022) requires Java 8 and does not work on architectures other than x86 (Intel/AMD).
 
-This was a problem for me when I got my new M1-based Mac. I found this excellent script (forked from [https://github.com/arbu/jviewer-starter](https://github.com/arbu/jviewer-starter) -- thank you!), and I modified it to work with a non-default Java installation so that a x64 Java can be started (rather than an Apple Silicon aarch64 Java). This will run under Rosetta. However, since Rosetta will most likely not be around forever, I also wrapped the script in a Docker container (built with x64 architecture). The Docker container can be run on any architecture via Docker, hopefully providing somewhat more "future-proofness" if/when Rosetta is removed from MacOS. The Docker container expects a x-server (referenced by the `DISPLAY` env variable), and therefore also requires XQuartz to be installed on MacOS.
+This was a problem for me when I got my new M1-based Mac. I found this excellent script (forked from [https://github.com/arbu/jviewer-starter](https://github.com/arbu/jviewer-starter) -- thank you!), and I modified it to work with a non-default Java installation so that an x64 Java can be started (rather than an Apple Silicon aarch64 Java). This will run under Rosetta. However, since Rosetta will most likely not be around forever, I also wrapped the script in a Docker container (built with x64 architecture). The Docker container can be run on any architecture via Docker, hopefully providing somewhat more "future-proofness" if/when Rosetta is removed from MacOS. The Docker container expects a x-server (referenced by the `DISPLAY` env variable), and therefore also requires XQuartz to be installed on MacOS.
 
 I use MacOS and have tested both the initial script and the docker container. I have not extensively tested this on Linux hosts. Zero testing has been performed on Windows, good luck there.
 
@@ -21,8 +21,8 @@ I use MacOS and have tested both the initial script and the docker container. I 
 I recommend symlinking the scripts to `/usr/local/bin` (or another location in your `PATH`) so they can be easily started:
 
 ```bash
-ln -s path/to/jviewer-starter/jviewer-starter.py /usr/local/bin/jviewer-starter
-ln -s path/to/jviewer-starter/jviewer-docker.sh /usr/local/bin/jviewer-docker
+ln -s $(pwd)/jviewer-starter.py /usr/local/bin/jviewer-starter
+ln -s $(pwd)/jviewer-docker.sh /usr/local/bin/jviewer-docker
 ```
 
 #### MacOS (Intel):
@@ -58,18 +58,18 @@ gl;hf
 Run with a locally-installed Java:
 ```bash
 jviewer-starter
-jviewer-starter --host [ip|hostname to server] --username [ipmi username] --password [ipmi password]
+jviewer-starter --host [ipmi ip/hostname] --username [ipmi username] --password [ipmi password]
 ```
 
 Run via Docker:
 ```bash
 jviewer-docker
-jviewer-docker --host [ip|hostname to server] --username [ipmi username] --password [ipmi password]
+jviewer-docker --host [ipmi ip/hostname] --username [ipmi username] --password [ipmi password]
 ```
 
 ## Issues
 
-XQuarts 2.8.2 has [a known issue](https://github.com/XQuartz/XQuartz/issues/31) in which GUI background elements inverse their colors upon mouse movement. I have applied a recommended fix via Java properties injected in `JVIEWER_JAVA_OPTIONS`. This only affects JViewer via Docker.
+XQuarts 2.8.2 has [a known issue](https://github.com/XQuartz/XQuartz/issues/31) in which GUI background elements inverse their colors upon mouse movement. I have applied a recommended fix via Java properties injected in `JVIEWER_JAVA_OPTIONS`. This only affects when running JViewer via Docker, not when running JViewer with a locally-installed Java.
 
 
 ## References:

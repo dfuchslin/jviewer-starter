@@ -73,14 +73,30 @@ def find_java(argparser):
     print("Unsupported java! version:%s arch:%s" % (version, arch))
     usage(argparser)
 
+def get_configuration_variable(args, name, label):
+    vars(args)
+
+    value = vars(args)[name]
+    if name != 'password':
+        if value:
+            print("%s: %s" % (label, value))
+        else:
+            value = input("%s: " % label)
+    else:
+        if value:
+            print("%s: *****" % label)
+        else:
+            value = getpass.getpass()
+    return value
+
 def parse_configuration(argparser):
     class configuration: pass
     args = argparser.parse_args()
 
     configuration.java = find_java(argparser)
-    configuration.server = args.host if args.host else input("Server host: ")
-    configuration.username = args.username if args.username  else input("Username: ")
-    configuration.password = args.password if args.password  else getpass.getpass()
+    configuration.server = get_configuration_variable(args, 'host', "IPMI host")
+    configuration.username = get_configuration_variable(args, 'username', "Username")
+    configuration.password = get_configuration_variable(args, 'password', "Password")
 
     return configuration
 
