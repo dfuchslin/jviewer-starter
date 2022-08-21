@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # coding: utf-8
 #
 # Copyright 2017 Aaron Bulmahn (aarbudev@gmail.com)
@@ -31,20 +31,58 @@ jnlpUrl = "http://{0}/Java/jviewer.jnlp?EXTRNIP={0}&JNLPSTR=JViewer"
 jarBase = "http://{0}/Java/release/"
 mainClass = "com.ami.kvm.jviewer.JViewer"
 
-try:
-    # Python 3
-    from urllib.request import urlopen, urlretrieve, Request
-    from urllib.parse import urlencode
-    from http.client import IncompleteRead
-except ImportError:
-    # Python 2
-    from urllib import urlencode, urlretrieve
-    from urllib2 import urlopen, Request
-    class IncompleteRead(object):
-        pass
-    input = raw_input
+from urllib.request import urlopen, urlretrieve, Request
+from urllib.parse import urlencode
+from urllib.error import HTTPError
+from http.client import IncompleteRead
 
-import sys, os, re, subprocess, platform, getpass, zipfile
+import argparse, sys, os, re, subprocess, platform, getpass, zipfile
+
+def usage(argparser):
+    argparser.print_help()
+    sys.exit(1)
+
+def find_property(settings, property):
+    if re.search("%s\s*=(.*)\n" % property, settings):
+        return re.search("%s\s*=(.*)\n" % property, settings).group(1).strip()
+    return ""
+
+def find_java(argparser):
+    java = "java"
+    if os.getenv('JVIEWER_JAVA_HOME'):
+        java = "%s/bin/java" % os.environ.get('JVIEWER_JAVA_HOME')
+        print("Using java: %s" % java)
+
+    try:
+        cmd = "%s -XshowSettings -version" % java
+        result = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        print("Error: %s" % e.stdout.decode('UTF-8'))
+        usage(argparser)
+
+    settings = result.stdout.decode('UTF-8')
+    version = find_property(settings, 'java.version')
+    arch = find_property(settings, 'os.arch')
+
+    version_is_supported = re.search("^(1.8)", version)
+    arch_is_supported = re.search("^(x86|amd64)", arch)
+
+    if version_is_supported and arch_is_supported:
+        return java
+
+    print("Unsupported java! version:%s arch:%s" % (version, arch))
+    usage(argparser)
+
+def parse_configuration(argparser):
+    class configuration: pass
+    args = argparser.parse_args()
+
+    configuration.java = find_java(argparser)
+    configuration.server = args.host if args.host else input("Server host: ")
+    configuration.username = args.username if args.username  else input("Username: ")
+    configuration.password = args.password if args.password  else getpass.getpass()
+
+    return configuration
 
 def update_jars(server):
     base = jarBase.format(server)
@@ -77,8 +115,17 @@ def update_jars(server):
 
     return path
 
-def run_jviewer(server, username, password, path):
-    credentials = {"WEBVAR_USERNAME": username, "WEBVAR_PASSWORD": password}
+def get_java_options(path):
+    java_options = ["-Djava.library.path=%s" % path]
+    if os.environ.get('JVIEWER_JAVA_OPTIONS'):
+        java_options.extend(os.environ.get('JVIEWER_JAVA_OPTIONS').split(' '))
+    return java_options
+
+def run_jviewer(configuration):
+    server = configuration.server
+    path = configuration.path
+
+    credentials = {"WEBVAR_USERNAME": configuration.username, "WEBVAR_PASSWORD": configuration.password}
 
     loginRequest = Request(loginUrl.format(server))
     loginRequest.data = urlencode(credentials).encode("utf-8")
@@ -93,8 +140,8 @@ def run_jviewer(server, username, password, path):
         # The server sends a wrong Content-length header. We just ignore it
         jnlpResponse = e.partial.decode("utf-8")
 
-    args = ["java"]
-    args.append("-Djava.library.path=" + path)
+    args = [configuration.java]
+    args.extend(get_java_options(path))
     args.append("-cp")
     args.append(os.path.join(path, "*"))
     args.append(mainClass)
@@ -104,8 +151,13 @@ def run_jviewer(server, username, password, path):
     subprocess.call(args)
 
 if __name__ == "__main__":
-    server = sys.argv[1] if len(sys.argv) > 1 else input("Server: ")
-    path = update_jars(server)
-    username = sys.argv[2] if len(sys.argv) > 2 else input("Username: ")
-    password = sys.argv[3] if len(sys.argv) > 3 else getpass.getpass()
-    run_jviewer(server, username, password, path)
+    print("Starting jviewer")
+    argparser = argparse.ArgumentParser(description='Download and open the JViewer remote console',
+        epilog='JViewer does not support Java newer than Java 8, and a JRE with x86 32/64-bit architecture must be installed. You can override the system default java with environment variable JVIEWER_JAVA_HOME.')
+    argparser.add_argument('--host', nargs='?', help='the hostname or IP address of the IPMI server')
+    argparser.add_argument('--username', nargs='?', help='the IPMI username')
+    argparser.add_argument('--password', nargs='?', help='the IPMI password')
+
+    configuration = parse_configuration(argparser)
+    configuration.path = update_jars(configuration.server)
+    run_jviewer(configuration)

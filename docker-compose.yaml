@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  jviewer:
+    container_name: jviewer
+    build: .
+    init: true
+    restart: "no"
+    environment:
+      # xquartz display hack: https://github.com/XQuartz/XQuartz/issues/31
+      JVIEWER_JAVA_OPTIONS: "-Dsun.java2d.xrender=false -Dsun.java2d.pmoffscreen=false -Dremote.x11.workaround=false -Dawt.useSystemAAFontSettings=lcd -Dsun.java2d.renderer=sun.java2d.marlin.MarlinRenderingEngine -Djava2d.font.loadFontConf=true"
