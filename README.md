@@ -1,10 +1,10 @@
-# jviewer-starter
+# JViewer starter script
 
 Script to download and start the JViewer remote console application. It has become increasingly difficult to execute Java Web Start applications, this script helps alleviate the pain and frustration. Tested on my AsrockRack D1541D4U-2T8R.
 
-Furthermore, the JViewer version in the latest BMC firmware (as of 2022) requires Java 8 and does not work on architectures other than x86 (Intel/AMD).
+Furthermore, the JViewer version in the latest BMC firmware (as of 2022) requires Java 8 and __does not work on architectures other than x86 (Intel/AMD)__.
 
-This was a problem for me when I got my new M1-based Mac. I found this excellent script (forked from [https://github.com/arbu/jviewer-starter](https://github.com/arbu/jviewer-starter) -- thank you!), and I modified it to work with a non-default Java installation so that an x64 Java can be started (rather than an Apple Silicon aarch64 Java). This will run under Rosetta. However, since Rosetta will most likely not be around forever, I also wrapped the script in a Docker container (built with x64 architecture). The Docker container can be run on any architecture via Docker, hopefully providing somewhat more "future-proofness" if/when Rosetta is removed from MacOS. The Docker container expects a x-server (referenced by the `DISPLAY` env variable), and therefore also requires XQuartz to be installed on MacOS.
+This was a problem for me when I got my new M1-based Mac. I found this excellent script (forked from [https://github.com/arbu/jviewer-starter](https://github.com/arbu/jviewer-starter) -- thank you! 🫶), and I modified it to work with a non-default Java installation so that an x64 Java can be started (rather than an Apple Silicon aarch64 Java). This will run under Rosetta. However, since Rosetta will most likely not be around forever, I also wrapped the script in a Docker container (built with x64 architecture). The Docker container can be run on any architecture via Docker, hopefully providing somewhat more "future-proofness" if/when Rosetta is removed from MacOS. The Docker container expects an x-server (referenced by the `DISPLAY` env variable), and therefore also requires XQuartz to be installed on MacOS.
 
 I use MacOS and have tested both the initial script and the docker container. I have not extensively tested this on Linux hosts. Zero testing has been performed on Windows, good luck there.
 
@@ -31,6 +31,7 @@ brew install zulu8
 ```
 
 #### MacOS (Apple Silicon)
+Homebrew installs the aarch64 version, but unfortunately we need the x64 version (which will run via Rosetta). Manual install (is there an easier way to do this via Homebrew? seems this may help: https://medium.com/mkdir-awesome/how-to-install-x86-64-homebrew-packages-on-apple-m1-macbook-54ba295230f):
 ```bash
 export ZULU_VERSION=zulu8.64.0.19-ca-jdk8.0.345-macosx_x64
 curl -L "https://cdn.azul.com/zulu/bin/${ZULU_VERSION}.tar.gz" -o /tmp/${ZULU_VERSION}.tar.gz
